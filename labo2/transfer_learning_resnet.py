@@ -5,6 +5,7 @@ import numpy as np
 import torch
 import torch.nn as nn
 import torch.optim as optim
+import torchvision
 
 # Module du dataset
 from voc_classification_dataset import VOCClassificationDataset
@@ -17,7 +18,7 @@ weights_path = os.path.join(dir_path, 'weights', 'no1_best.pt')
 
 # ---------------- Paramètres et hyperparamètres ----------------#
 use_cpu = True  # Forcer à utiliser le cpu?
-save_model = True  # Sauvegarder le meilleur modèle ?
+save_model = False  # Sauvegarder le meilleur modèle ?
 
 input_channels = 3  # Nombre de canaux d'entree
 num_classes = 21  # Nombre de classes
@@ -27,7 +28,7 @@ epochs = 10  # Nombre d'itérations (epochs)
 train_val_split = 0.8  # Proportion d'échantillons
 lr = 0.0001  # Taux d'apprentissage
 random_seed = 1  # Pour la répétabilité
-num_workers = 6  # Nombre de threads pour chargement des données
+num_workers = 0  # Nombre de threads pour chargement des données
 input_size = 100  # Taille (l&h) des images désirée
 # ------------ Fin des paramètres et hyperparamètres ------------#
 
@@ -54,7 +55,7 @@ if __name__ == '__main__':
                   'shuffle': True,
                   'num_workers': num_workers}
 
-    dataset_trainval = VOCClassificationDataset(data_path, image_set='train', download=True, img_shape=input_size)
+    dataset_trainval = VOCClassificationDataset(data_path, image_set='train', download=False, img_shape=input_size)
 
     # Séparation du dataset (entraînement et validation)
     dataset_train, dataset_val = torch.utils.data.random_split(dataset_trainval,
@@ -73,6 +74,14 @@ if __name__ == '__main__':
 
     # ------------------------ Laboratoire 2 - Question 2 - Début de la section à compléter ----------------------------
     # Chargement du modèle
+    model = torchvision.models.resnet18(weights=torchvision.models.ResNet18_Weights.DEFAULT)
+    for param in model.parameters():
+        param.requires_grad = False
+    
+    model.fc = nn.Sequential(
+        nn.Linear(model.fc.in_features, num_classes),
+        nn.Sigmoid()
+    )
 
     # ------------------------ Laboratoire 2 - Question 2 - Fin de la section à compléter ------------------------------
 

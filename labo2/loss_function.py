@@ -10,7 +10,42 @@ class LocalizationLoss(nn.Module):
     def forward(self, output, target):
         # ------------------------ Laboratoire 2 - Question 4 - Début de la section à compléter ------------------------
         # À compléter
-        return torch.tensor(0.0)
+        batch_size = output.size(0)
+        total_loss = 0.0
+
+        for index in range(batch_size):
+            centerx_predict, centery_predict, width_predict, height_predict = output[index, 0:4]
+            xmin_target, ymin_target, xmax_target, ymax_target, class_id_target = target[index]
+
+            # --- Conversion boîte prédite
+            xmin_predict = centerx_predict - width_predict / 2
+            ymin_predict = centery_predict - height_predict / 2
+            xmax_predict = centerx_predict + width_predict / 2
+            ymax_predict = centery_predict + height_predict / 2
+
+            # --- Conversion boîte prédite
+            centerx_target = (xmin_target + xmax_target) / 2
+            centery_target = (ymin_target + ymax_target) / 2
+            width_target  = xmax_target - xmin_target
+            height_target  = ymax_target - ymin_target
+
+            # --- Localisation loss (MSE)
+            # box_pred = torch.stack([xmin_predict, ymin_predict, xmax_predict, ymax_predict])
+            # box_true = torch.stack([xmin_target, ymin_target, xmax_target, ymax_target])
+            box_pred = torch.stack([centerx_predict, centery_predict, width_predict, height_predict])
+            box_true = torch.stack([centerx_target, centery_target, width_target, height_target])
+
+            loc_loss = nn.functional.mse_loss(box_pred, box_true)
+
+            # --- Classification loss
+            logits = output[index, 4:].unsqueeze(0)
+            target_class = torch.tensor([int(class_id_target.item())], dtype=torch.long)
+            class_loss = nn.functional.cross_entropy(logits, target_class)
+
+            # --- Combinaison
+            total_loss += loc_loss + self._alpha * class_loss
+
+        return total_loss / batch_size
         # ------------------------ Laboratoire 2 - Question 4 - Fin de la section à compléter --------------------------
 
 

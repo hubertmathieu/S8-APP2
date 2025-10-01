@@ -8,6 +8,8 @@ from PIL import Image
 from torchvision import transforms
 from torchvision.datasets import VOCSegmentation, VOCDetection
 
+from PIL import ImageFile
+ImageFile.LOAD_TRUNCATED_IMAGES = True
 
 class VOCClassificationDataset(VOCDetection):
     def __init__(self, root, image_set='train', download=True, img_shape=100):
@@ -41,14 +43,17 @@ class VOCClassificationDataset(VOCDetection):
 
     def __getitem__(self, index):
         # Chargement des images et métadonnées provenant de PASCAL VOC
-        image = Image.open(self.images[index])
+        image = Image.open(self.images[index]).convert("RGB")
         target_metadata = self.parse_voc_xml(ET.parse(self.annotations[index]).getroot())
 
         # Creation d'un vecteur multi-hot pour la classification
         multi_hot = torch.zeros(self.nb_classe, dtype=torch.float)
 
         # ------------------------ Laboratoire 2 - Question 1 - Début de la section à compléter ------------------------
-
+        for object in target_metadata["annotation"]["object"]:
+            object_class = object["name"]
+            idx = self.VOC_CLASSES_2_ID[object_class]
+            multi_hot[idx] = 1
 
         # ------------------------ Laboratoire 2 - Question 1 - Fin de la section à compléter --------------------------
 
@@ -76,7 +81,7 @@ if __name__ == '__main__':
     data_path = os.path.join(dir_path, 'data')
 
     # Chargement du dataset
-    dataset_train = VOCClassificationDataset(data_path, image_set='train', download=True, img_shape=500)
+    dataset_train = VOCClassificationDataset(data_path, image_set='train', download=False, img_shape=500)
 
     # Affichage
     fig, axs = plt.subplots(3, 1)
