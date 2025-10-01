@@ -33,7 +33,7 @@ class ConveyorSimulator(Dataset):
 
         image = Image.open(os.path.join(self._data_path, 'images', img_id))
 
-        boxes = np.zeros((MAX_SHAPE_COUNT, 5))
+        boxes = np.zeros((MAX_SHAPE_COUNT, 5)) # [x, y, w, h, class_id]
         class_labels = np.zeros((3))
         for i in range(MAX_SHAPE_COUNT):
             if i >= len(self._metadata[img_id]['size']):

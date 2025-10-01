@@ -10,6 +10,7 @@ from torchvision import transforms
 from dataset import ConveyorSimulator
 from metrics import AccuracyMetric, MeanAveragePrecisionMetric, SegmentationIntersectionOverUnionMetric
 from visualizer import Visualizer
+from models.classification_network import ClassificationNetwork
 
 TRAIN_VALIDATION_SPLIT = 0.9
 CLASS_PROBABILITY_THRESHOLD = 0.5
@@ -26,7 +27,11 @@ class ConveyorCnnTrainer():
         self._device = torch.device('cuda' if use_cuda else 'cpu')
         seed = np.random.rand()
         torch.manual_seed(seed)
-        self.transform = transforms.Compose([transforms.ToTensor()])
+        self.transform = transforms.Compose([
+            transforms.ToTensor(),
+            transforms.Resize(64),
+            #transforms.Pad((5, 5, 6, 6), fill=0)
+        ])
 
         # Generation des 'path'
         self._dir_path = os.path.dirname(__file__)
@@ -45,7 +50,7 @@ class ConveyorCnnTrainer():
     def _create_model(self, task):
         if task == 'classification':
             # À compléter
-            raise NotImplementedError()
+            return ClassificationNetwork(num_classes=SEGMENTATION_BACKGROUND_CLASS)
         elif task == 'detection':
             # À compléter
             raise NotImplementedError()
@@ -57,8 +62,7 @@ class ConveyorCnnTrainer():
 
     def _create_criterion(self, task):
         if task == 'classification':
-            # À compléter
-            raise NotImplementedError()
+            return ClassificationNetwork.get_criterion()
         elif task == 'detection':
             # À compléter
             raise NotImplementedError()
@@ -79,7 +83,7 @@ class ConveyorCnnTrainer():
             raise ValueError('Not supported task')
 
     def test(self):
-        params_test = {'batch_size': self._args.batch_size, 'shuffle': False, 'num_workers': 4}
+        params_test = {'batch_size': self._args.batch_size, 'shuffle': False, 'num_workers': 0}
 
         dataset_test = ConveyorSimulator(self._test_data_path, self.transform)
         test_loader = torch.utils.data.DataLoader(dataset_test, **params_test)
@@ -119,8 +123,8 @@ class ConveyorCnnTrainer():
         best_validation = 0
         nb_worse_validation = 0
 
-        params_train = {'batch_size': self._args.batch_size, 'shuffle': True, 'num_workers': 4}
-        params_validation = {'batch_size': self._args.batch_size, 'shuffle': False, 'num_workers': 4}
+        params_train = {'batch_size': self._args.batch_size, 'shuffle': True, 'num_workers': 0}
+        params_validation = {'batch_size': self._args.batch_size, 'shuffle': False, 'num_workers': 0}
 
         dataset_trainval = ConveyorSimulator(self._train_data_path, self.transform)
         dataset_train, dataset_validation = torch.utils.data.random_split(dataset_trainval,
@@ -246,9 +250,32 @@ class ConveyorCnnTrainer():
                 Si un 0 est présent à (i, 2), aucune croix n'est présente dans l'image i.
         :return: La valeur de la fonction de coût pour le lot
         """
+        optimizer.zero_grad()
+        outputs = model.forward(image)
 
-        # À compléter
-        raise NotImplementedError()
+        loss_criterion = None
+        target = None
+
+        if task == 'classification':
+            # À compléter
+            target = class_labels
+        elif task == 'detection':
+            # À compléter
+            target = boxes
+        elif task == 'segmentation':
+            # À compléter
+            target = segmentation_target
+        else:
+            raise ValueError('Not supported task')
+        
+        loss_criterion = criterion(outputs, target)
+        loss_criterion.backward()
+        optimizer.step()
+       
+        
+        metric.accumulate(outputs, class_labels)
+        
+        return loss_criterion
 
     def _test_batch(self, task, model, criterion, metric, image, segmentation_target, boxes, class_labels):
         """
@@ -287,9 +314,27 @@ class ConveyorCnnTrainer():
                 Si un 0 est présent à (i, 2), aucune croix n'est présente dans l'image i.
         :return: La valeur de la fonction de coût pour le lot
         """
+        outputs = model.forward(image)
 
-        # À compléter
-        raise NotImplementedError()
+        target = None
+
+        if task == 'classification':
+            # À compléter
+            target = class_labels
+        elif task == 'detection':
+            # À compléter
+            target = boxes
+        elif task == 'segmentation':
+            # À compléter
+            target = segmentation_target
+        else:
+            raise ValueError('Not supported task')
+        
+        loss_criterion = criterion(outputs, target)
+       
+        metric.accumulate(outputs, class_labels)
+        
+        return loss_criterion
 
 
 if __name__ == '__main__':
