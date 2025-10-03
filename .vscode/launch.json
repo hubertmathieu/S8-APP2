@@ -13,7 +13,7 @@
             "program": "${file}",
             "args": [
                 "--mode", "train",
-                "--task", "classification",
+                "--task", "detection",
                 "--batch_size", "64",
                 "--epochs", "15",
                 "--lr", "1e-3",

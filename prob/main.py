@@ -11,9 +11,10 @@ from dataset import ConveyorSimulator
 from metrics import AccuracyMetric, MeanAveragePrecisionMetric, SegmentationIntersectionOverUnionMetric
 from visualizer import Visualizer
 from models.classification_network import ClassificationNetwork
+from models.detection_network import DetectionNetwork
 
-TRAIN_VALIDATION_SPLIT = 0.9
-CLASS_PROBABILITY_THRESHOLD = 0.5
+TRAIN_VALIDATION_SPLIT = 0.85
+CLASS_PROBABILITY_THRESHOLD = 0.6
 INTERSECTION_OVER_UNION_THRESHOLD = 0.5
 CONFIDENCE_THRESHOLD = 0.5
 SEGMENTATION_BACKGROUND_CLASS = 3
@@ -30,6 +31,11 @@ class ConveyorCnnTrainer():
         self.transform = transforms.Compose([
             transforms.ToTensor(),
             transforms.Resize(64),
+            transforms.RandomHorizontalFlip(p=0.5),      # 50% chance flip horizontally
+            transforms.RandomVerticalFlip(p=0.5),        # 50% chance flip vertically
+            transforms.RandomRotation(degrees=15),       # small random rotations
+            transforms.RandomResizedCrop(64, scale=(0.8, 1.0)),  # crop & resize
+
             #transforms.Pad((5, 5, 6, 6), fill=0)
         ])
 
@@ -53,7 +59,7 @@ class ConveyorCnnTrainer():
             return ClassificationNetwork(num_classes=SEGMENTATION_BACKGROUND_CLASS)
         elif task == 'detection':
             # À compléter
-            raise NotImplementedError()
+            return DetectionNetwork(num_classes=SEGMENTATION_BACKGROUND_CLASS, max_objects=SEGMENTATION_BACKGROUND_CLASS)
         elif task == 'segmentation':
             # À compléter
             raise NotImplementedError()
@@ -65,7 +71,7 @@ class ConveyorCnnTrainer():
             return ClassificationNetwork.get_criterion()
         elif task == 'detection':
             # À compléter
-            raise NotImplementedError()
+            return DetectionNetwork.get_criterion()
         elif task == 'segmentation':
             # À compléter
             raise NotImplementedError()
@@ -273,7 +279,7 @@ class ConveyorCnnTrainer():
         optimizer.step()
        
         
-        metric.accumulate(outputs, class_labels)
+        metric.accumulate(outputs, target)
         
         return loss_criterion
 
@@ -332,7 +338,7 @@ class ConveyorCnnTrainer():
         
         loss_criterion = criterion(outputs, target)
        
-        metric.accumulate(outputs, class_labels)
+        metric.accumulate(outputs, target)
         
         return loss_criterion
 
