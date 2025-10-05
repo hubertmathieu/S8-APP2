@@ -17,8 +17,9 @@ SHAPE_TO_CLASS = {
 
 
 class ConveyorSimulator(Dataset):
-    def __init__(self, data_path, transform=None, num_classes=4):
-        self._transform = transform
+    def __init__(self, data_path, image_transform=None, mask_tranform=None, num_classes=3):
+        self._image_transform = image_transform
+        self._mask_transform = mask_tranform
         self._data_path = data_path
         self._json_path = os.path.join(data_path, 'metaData.json')
         self._num_classes = num_classes
@@ -52,13 +53,17 @@ class ConveyorSimulator(Dataset):
         segmentation_target = np.array(masks)[:, :, 2]
         segmentation_target[segmentation_target == 0] = 4
         segmentation_target -= 1
-
-        if self._transform is not None:
-            image = self._transform(image)
         segmentation_target = torch.from_numpy(segmentation_target).long()
 
-        return image[0:1, :, :], segmentation_target, boxes, class_labels
+        if self._image_transform is not None:
+            image = self._image_transform(image)
 
+        if self._mask_transform is not None:
+            segmentation_target = segmentation_target.unsqueeze(0)  # (1, H, W)
+            segmentation_target = self._mask_transform(segmentation_target)
+            segmentation_target = segmentation_target.squeeze(0)    # back to (H, W)
+
+        return image[0:1, :, :], segmentation_target, boxes, class_labels
 
 if __name__ == '__main__':
     dir_path = os.path.dirname(__file__)

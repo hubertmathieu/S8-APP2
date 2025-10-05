@@ -44,24 +44,6 @@ class DetectionNetwork(nn.Module):
         preds[:, :, 1:4] = torch.sigmoid(preds[:, :, 1:4])  # x, y, size
 
         return preds
-        
-    
-    # @staticmethod
-    # def get_criterion(alpha=2):
-    #     def criterion(output, target):
-    #         # N = nb_images
-    #         # output = (N, max_object, 2)  =  [ [image], [image] ], image = [[boxe 1], [boxe2], [boxe3]
-    #         class_predict = output[:, :, 0]
-    #         class_predict, boxe_predict = output
-    #         class_target, boxe_target = target
-
-    #         Loss_classes = nn.CrossEntropyLoss()(class_predict, class_target)
-    #         Loss_boxes = nn.MSELoss()(boxe_predict, boxe_target)
-
-    #         return Loss_boxes + alpha * Loss_classes
-
-    #     return criterion
-
 
     @staticmethod
     def get_criterion(alpha=2, beta=5):
