@@ -11,9 +11,11 @@ from dataset import ConveyorSimulator
 from metrics import AccuracyMetric, MeanAveragePrecisionMetric, SegmentationIntersectionOverUnionMetric
 from visualizer import Visualizer
 from models.classification_network import ClassificationNetwork
+from models.detection_network import DetectionNetwork
+from models.segmentation_network import SegmentationNetwork
 
-TRAIN_VALIDATION_SPLIT = 0.9
-CLASS_PROBABILITY_THRESHOLD = 0.5
+TRAIN_VALIDATION_SPLIT = 0.85
+CLASS_PROBABILITY_THRESHOLD = 0.6
 INTERSECTION_OVER_UNION_THRESHOLD = 0.5
 CONFIDENCE_THRESHOLD = 0.5
 SEGMENTATION_BACKGROUND_CLASS = 3
@@ -27,15 +29,21 @@ class ConveyorCnnTrainer():
         self._device = torch.device('cuda' if use_cuda else 'cpu')
         seed = np.random.rand()
         torch.manual_seed(seed)
-        self.transform = transforms.Compose([
+        self.image_transform = transforms.Compose([
             transforms.ToTensor(),
-            #transforms.Resize(64),
-            transforms.Pad((5, 5, 6, 6), fill=0),
-            transforms.RandomHorizontalFlip(p=0.5),
-            transforms.RandomVerticalFlip(p=0.5),
-            transforms.RandomRotation(degrees=90),
+            transforms.Resize(64, interpolation=transforms.InterpolationMode.BILINEAR)
+            # transforms.RandomHorizontalFlip(p=0.5),      # 50% chance flip horizontally
+            # transforms.RandomVerticalFlip(p=0.5),        # 50% chance flip vertically
+            # transforms.RandomRotation(degrees=15),       # small random rotations
+            # transforms.RandomResizedCrop(64, scale=(0.8, 1.0)),  # crop & resize
+
+            #transforms.Pad((5, 5, 6, 6), fill=0)
         ])
 
+        self.mask_transform = transforms.Compose([
+            transforms.Resize(64, interpolation=transforms.InterpolationMode.NEAREST),
+        ])
+        
         # Generation des 'path'
         self._dir_path = os.path.dirname(__file__)
         self._train_data_path = os.path.join(self._dir_path, 'data', 'training')
@@ -56,10 +64,10 @@ class ConveyorCnnTrainer():
             return ClassificationNetwork(num_classes=SEGMENTATION_BACKGROUND_CLASS)
         elif task == 'detection':
             # À compléter
-            raise NotImplementedError()
+            return DetectionNetwork(num_classes=SEGMENTATION_BACKGROUND_CLASS, max_objects=SEGMENTATION_BACKGROUND_CLASS)
         elif task == 'segmentation':
             # À compléter
-            raise NotImplementedError()
+            return SegmentationNetwork(num_classes=SEGMENTATION_BACKGROUND_CLASS)
         else:
             raise ValueError('Not supported task')
 
@@ -68,10 +76,10 @@ class ConveyorCnnTrainer():
             return ClassificationNetwork.get_criterion()
         elif task == 'detection':
             # À compléter
-            raise NotImplementedError()
+            return DetectionNetwork.get_criterion()
         elif task == 'segmentation':
             # À compléter
-            raise NotImplementedError()
+            return SegmentationNetwork.get_criterion()
         else:
             raise ValueError('Not supported task')
 
@@ -88,7 +96,7 @@ class ConveyorCnnTrainer():
     def test(self):
         params_test = {'batch_size': self._args.batch_size, 'shuffle': False, 'num_workers': 0}
 
-        dataset_test = ConveyorSimulator(self._test_data_path, self.transform)
+        dataset_test = ConveyorSimulator(self._test_data_path, self.image_transform, self.mask_transform)
         test_loader = torch.utils.data.DataLoader(dataset_test, **params_test)
 
         test_metric = self._create_metric(self._args.task)
@@ -129,7 +137,7 @@ class ConveyorCnnTrainer():
         params_train = {'batch_size': self._args.batch_size, 'shuffle': True, 'num_workers': 0}
         params_validation = {'batch_size': self._args.batch_size, 'shuffle': False, 'num_workers': 0}
 
-        dataset_trainval = ConveyorSimulator(self._train_data_path, self.transform)
+        dataset_trainval = ConveyorSimulator(self._train_data_path, self.image_transform, self.mask_transform)
         dataset_train, dataset_validation = torch.utils.data.random_split(dataset_trainval,
                                                                           [int(len(
                                                                               dataset_trainval) * TRAIN_VALIDATION_SPLIT),
@@ -276,7 +284,7 @@ class ConveyorCnnTrainer():
         optimizer.step()
        
         
-        metric.accumulate(outputs, class_labels)
+        metric.accumulate(outputs, target)
         
         return loss_criterion
 
@@ -335,7 +343,7 @@ class ConveyorCnnTrainer():
         
         loss_criterion = criterion(outputs, target)
        
-        metric.accumulate(outputs, class_labels)
+        metric.accumulate(outputs, target)
         
         return loss_criterion
 
