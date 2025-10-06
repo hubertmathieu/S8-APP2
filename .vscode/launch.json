@@ -14,9 +14,10 @@
             "args": [
                 "--mode", "train",
                 "--task", "classification",
-                "--batch_size", "64",
-                "--epochs", "15",
+                "--batch_size", "16",
+                "--epochs", "50",
                 "--lr", "1e-3",
+                "--use_gpu"
             ],
             "console": "integratedTerminal",
         }

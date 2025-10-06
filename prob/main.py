@@ -29,8 +29,11 @@ class ConveyorCnnTrainer():
         torch.manual_seed(seed)
         self.transform = transforms.Compose([
             transforms.ToTensor(),
-            transforms.Resize(64),
-            #transforms.Pad((5, 5, 6, 6), fill=0)
+            #transforms.Resize(64),
+            transforms.Pad((5, 5, 6, 6), fill=0),
+            transforms.RandomHorizontalFlip(p=0.5),
+            transforms.RandomVerticalFlip(p=0.5),
+            transforms.RandomRotation(degrees=90),
         ])
 
         # Generation des 'path'
