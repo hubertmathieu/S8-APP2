@@ -14,8 +14,8 @@ from models.classification_network import ClassificationNetwork
 from models.detection_network import DetectionNetwork
 from models.segmentation_network import SegmentationNetwork
 
-TRAIN_VALIDATION_SPLIT = 0.85
-CLASS_PROBABILITY_THRESHOLD = 0.6
+TRAIN_VALIDATION_SPLIT = 0.80
+CLASS_PROBABILITY_THRESHOLD = 0.75
 INTERSECTION_OVER_UNION_THRESHOLD = 0.5
 CONFIDENCE_THRESHOLD = 0.5
 SEGMENTATION_BACKGROUND_CLASS = 3

@@ -15,8 +15,8 @@
                 "--mode", "train",
                 "--task", "classification",
                 "--batch_size", "16",
-                "--epochs", "50",
-                "--lr", "1e-3",
+                "--epochs", "20",
+                "--lr", "1e-4",
                 "--use_gpu"
             ],
             "console": "integratedTerminal",
