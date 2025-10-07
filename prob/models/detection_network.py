@@ -67,9 +67,8 @@ class DetectionNetwork(nn.Module):
             
             mask = presence_target.unsqueeze(-1)
 
-            pos_weight = (presence_target == 0).sum() / ((presence_target == 1).sum() + 1e-6)
             loss_presence = F.binary_cross_entropy(
-                presence_pred, presence_target, weight=pos_weight
+                presence_pred, presence_target,
             )
 
             # Loss bbox
