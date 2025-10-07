@@ -9,27 +9,32 @@ class DetectionNetwork(nn.Module):
         self.num_classes=num_classes
         self.max_objects = max_objects
         self.features = nn.Sequential(
-            nn.Conv2d(1, 8, kernel_size=3, stride=1, padding=1),  # 1 -> 8
-            nn.ReLU(inplace=True),
-            nn.MaxPool2d(2),  # 64x64 -> 32x32
+            nn.Conv2d(1, 16, kernel_size=5, padding=2, stride=1),
+            nn.ReLU(),
+            nn.MaxPool2d(kernel_size=2, padding=0, stride=2),
 
-            nn.Conv2d(8, 16, kernel_size=3, stride=1, padding=1),  # 8 -> 16
-            nn.ReLU(inplace=True),
-            nn.MaxPool2d(2),  # 32x32 -> 16x16
+            nn.Conv2d(16, 32, kernel_size=3, stride=1, padding=1),
+            nn.ReLU(),
+            nn.MaxPool2d(kernel_size=2, padding=0, stride=2),
 
-            nn.Conv2d(16, 32, kernel_size=3, stride=1, padding=1),  # 16 -> 32
-            nn.ReLU(inplace=True),
-            nn.MaxPool2d(2),  # 16x16 -> 8x8
+            nn.Conv2d(32, 64, kernel_size=3, stride=1, padding=1),
+            nn.ReLU(),
+            nn.Conv2d(64, 64, kernel_size=3, stride=1, padding=1),
+            nn.ReLU(),
+            nn.Conv2d(64, 32, kernel_size=3, stride=1, padding=1),
+            nn.ReLU(),
+
+            nn.MaxPool2d(kernel_size=2, padding=0, stride=2),
         )
 
         self.classifier = nn.Sequential(
             nn.Linear(32 * 8 * 8, 128),  # 2048 -> 128
             nn.ReLU(inplace=True),
-            nn.Linear(128, 128),  # logits
+            nn.Linear(128, 256),  # logits
             nn.ReLU(inplace=True)
         )
         
-        self.fc_boxes = nn.Linear(128, self.max_objects * (1 + 3 + self.num_classes))
+        self.fc_boxes = nn.Linear(256, self.max_objects * (1 + 3 + self.num_classes))
 
     def forward(self, x):
         x = self.features(x)
@@ -37,7 +42,7 @@ class DetectionNetwork(nn.Module):
         x = self.classifier(x)
 
         boxe_predict = self.fc_boxes(x)
-        preds = boxe_predict.view(x.size(0), self.max_objects, 1 + 3 + self.num_classes)
+        preds = boxe_predict.view(boxe_predict.size(0), self.max_objects, 1 + 3 + self.num_classes)
         
         # Sigmoid pour presence et bbox (x,y,size normalisé entre 0 et 1)
         preds[:, :, 0] = torch.sigmoid(preds[:, :, 0])  # presence
@@ -46,7 +51,7 @@ class DetectionNetwork(nn.Module):
         return preds
 
     @staticmethod
-    def get_criterion(alpha=2, beta=5):
+    def get_criterion(alpha=1, beta=10):
         def criterion(pred, target):
             """
             pred: (N, max_objects, 1+3+C)
@@ -59,26 +64,25 @@ class DetectionNetwork(nn.Module):
             presence_target = target[:, :, 0]
             bbox_target = target[:, :, 1:4]
             class_target = target[:, :, 4].long()  # int class_id
-
-            # Loss présence (BCE)
-            loss_presence = F.binary_cross_entropy(presence_pred, presence_target)
-
-            # Masque pour bbox et classe (seulement si presence=1)
+            
             mask = presence_target.unsqueeze(-1)
 
-            # Loss bbox
-            loss_bbox = F.mse_loss(bbox_pred * mask, bbox_target * mask)
+            pos_weight = (presence_target == 0).sum() / ((presence_target == 1).sum() + 1e-6)
+            loss_presence = F.binary_cross_entropy(
+                presence_pred, presence_target, weight=pos_weight
+            )
 
+            # Loss bbox
+            loss_bbox = 0
             # Loss classe (CrossEntropy par bbox où presence=1)
             loss_class = 0
-            for i in range(pred.size(0)):  # batch
-                for j in range(pred.size(1)):  # bbox
-                    if presence_target[i, j] > 0:
-                        prediction_class = class_pred[i, j].unsqueeze(0)
-                        target_class = class_target[i, j].unsqueeze(0)
-                        loss_class += F.cross_entropy(prediction_class, target_class)
-                        
-            loss_class /= (mask.sum() + 1e-6)  # moyenne sur les objets présents
+            
+            valid = presence_target > 0
+            if valid.sum() > 0:
+                loss_bbox = F.mse_loss(bbox_pred[valid], bbox_target[valid])
+                loss_class = F.cross_entropy(class_pred[valid], class_target[valid])
+                
+            #loss_class /= (mask.sum() + 1e-6)  # moyenne sur les objets présents
 
             return loss_presence + beta * loss_bbox + alpha * loss_class
 
