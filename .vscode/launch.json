@@ -13,10 +13,10 @@
             "program": "${file}",
             "args": [
                 "--mode", "train",
-                "--task", "classification",
+                "--task", "segmentation",
                 "--batch_size", "16",
                 "--epochs", "20",
-                "--lr", "1e-4",
+                "--lr", "1e-3",
                 "--use_gpu"
             ],
             "console": "integratedTerminal",

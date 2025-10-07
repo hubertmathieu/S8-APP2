@@ -1,4 +1,4 @@
 nb_params : 214435
 batch_size : 16
 epochs : 20
-lr : 1e-4"
+lr : 1e-4

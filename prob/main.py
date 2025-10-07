@@ -52,7 +52,7 @@ class ConveyorCnnTrainer():
 
         # Initialisation du model et des classes pour l'entraînement
         self._model = self._create_model(self._args.task).to(self._device)
-        self._criterion = self._create_criterion(self._args.task)
+        self._criterion = self._create_criterion(self._args.task, self._device)
 
         print('Model : ')
         print(self._model)
@@ -71,7 +71,7 @@ class ConveyorCnnTrainer():
         else:
             raise ValueError('Not supported task')
 
-    def _create_criterion(self, task):
+    def _create_criterion(self, task, device='cpu'):
         if task == 'classification':
             return ClassificationNetwork.get_criterion()
         elif task == 'detection':
@@ -79,7 +79,7 @@ class ConveyorCnnTrainer():
             return DetectionNetwork.get_criterion()
         elif task == 'segmentation':
             # À compléter
-            return SegmentationNetwork.get_criterion()
+            return SegmentationNetwork.get_criterion(device)
         else:
             raise ValueError('Not supported task')
 
