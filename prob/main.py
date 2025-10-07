@@ -32,12 +32,6 @@ class ConveyorCnnTrainer():
         self.image_transform = transforms.Compose([
             transforms.ToTensor(),
             transforms.Resize(64, interpolation=transforms.InterpolationMode.BILINEAR)
-            # transforms.RandomHorizontalFlip(p=0.5),      # 50% chance flip horizontally
-            # transforms.RandomVerticalFlip(p=0.5),        # 50% chance flip vertically
-            # transforms.RandomRotation(degrees=15),       # small random rotations
-            # transforms.RandomResizedCrop(64, scale=(0.8, 1.0)),  # crop & resize
-
-            #transforms.Pad((5, 5, 6, 6), fill=0)
         ])
 
         self.mask_transform = transforms.Compose([
@@ -52,7 +46,7 @@ class ConveyorCnnTrainer():
 
         # Initialisation du model et des classes pour l'entraînement
         self._model = self._create_model(self._args.task).to(self._device)
-        self._criterion = self._create_criterion(self._args.task, self._device)
+        self._criterion = self._create_criterion(self._args.task)
 
         print('Model : ')
         print(self._model)
@@ -71,7 +65,7 @@ class ConveyorCnnTrainer():
         else:
             raise ValueError('Not supported task')
 
-    def _create_criterion(self, task, device='cpu'):
+    def _create_criterion(self, task):
         if task == 'classification':
             return ClassificationNetwork.get_criterion()
         elif task == 'detection':
@@ -79,7 +73,7 @@ class ConveyorCnnTrainer():
             return DetectionNetwork.get_criterion()
         elif task == 'segmentation':
             # À compléter
-            return SegmentationNetwork.get_criterion(device)
+            return SegmentationNetwork.get_criterion()
         else:
             raise ValueError('Not supported task')
 

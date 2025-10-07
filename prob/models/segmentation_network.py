@@ -6,17 +6,17 @@ class SegmentationNetwork(nn.Module):
         super(SegmentationNetwork, self).__init__()
         self.num_classes=num_classes
 
-        self.convblock_down1 = self.double_convblock(1, 16) # 8x64x64
-        self.pool1 = nn.MaxPool2d(2) # 8x32x32
+        self.convblock_down1 = self.double_convblock(1, 16)
+        self.pool1 = nn.MaxPool2d(2)
 
-        self.convblock_down2 = self.double_convblock(16, 32) # 16x32x32
-        self.pool2 = nn.MaxPool2d(2) # 16x16x16
+        self.convblock_down2 = self.double_convblock(16, 32)
+        self.pool2 = nn.MaxPool2d(2)
 
-        self.convblock_down3 = self.double_convblock(32, 64) # 32x16x16
-        self.pool3 = nn.MaxPool2d(2) # 32x8x8
+        self.convblock_down3 = self.double_convblock(32, 64)
+        self.pool3 = nn.MaxPool2d(2)
 
-        self.convblock_down4 = self.double_convblock(64, 128) # 64x8x8
-        self.pool4 = nn.MaxPool2d(2) # 64x4x4
+        self.convblock_down4 = self.double_convblock(64, 128)
+        self.pool4 = nn.MaxPool2d(2)
 
         self.bottom = nn.Sequential(
             nn.Conv2d(128, 128, kernel_size=3, padding=1, stride=1),
@@ -74,6 +74,5 @@ class SegmentationNetwork(nn.Module):
 
 
     @staticmethod
-    def get_criterion(device='cpu'):
-        class_weights = torch.tensor([0.3, 1.0, 1.0, 1.0], device=device)
-        return nn.CrossEntropyLoss(weight=class_weights)
+    def get_criterion():
+        return nn.CrossEntropyLoss()
